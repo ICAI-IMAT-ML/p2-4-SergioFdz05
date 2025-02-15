@@ -44,7 +44,7 @@ class LinearRegressor:
         X_with_bias = np.insert(
             X, 0, 1, axis=1
         )  # Adding a column of ones for intercept
-
+        
         if method == "least_squares":
             self.fit_multiple(X_with_bias, y)
         elif method == "gradient_descent":
@@ -65,10 +65,12 @@ class LinearRegressor:
             None: Modifies the model's coefficients and intercept in-place.
         """
         # Replace this code with the code you did in the previous laboratory session
-        unos = np.ones((X.shape[0], 1))  # Columna de unos con el mismo número de filas
-        X_new = np.hstack((unos, X))
+        if X.shape[1] == 1 or X.shape[1] == None:  
+            unos = np.ones((X.shape[0], 1))  # Si no hay columna de unos, la agregamos
+            X_new = np.hstack((unos, X))
+        else:
+            X_new = X.copy()
         w = np.linalg.inv(np.transpose(X_new) @ X_new) @ np.transpose(X_new) @ y
-        
         self.intercept = w[0]
         self.coefficients = w[1:]
 
@@ -92,18 +94,24 @@ class LinearRegressor:
             np.random.rand(X.shape[1] - 1) * 0.01
         )
         self.intercept = np.random.rand() * 0.01
-
-        # Implement gradient descent (TODO)
+        self.loss_history = []  # Historial de pérdida
+        self.w_history = []  # Historial de coeficientes
+        self.b_history = []  # Historial del intercepto
+        # Implement gradient descent
         for epoch in range(iterations):
-            predictions = self.predict(X[:,1])
+            predictions = self.predict(X[:, 1:])
             error = predictions - y
 
             gradient = (learning_rate/m)* np.dot(error.T, X)
             self.intercept -= gradient[0]
-            self.coefficients -= gradient[1]
+            self.coefficients -= gradient[1:]
+
+            mse = np.sum(error**2)/(len(predictions))
+            self.loss_history.append(mse)
+            self.w_history.append(self.coefficients.copy())  # Copia para evitar referencias
+            self.b_history.append(self.intercept)
 
             if epoch % 1000 == 0:
-                mse = np.sum((y-predictions)**2)/(len(predictions))
                 print(f"Epoch {epoch}: MSE = {mse}")
                 print(f"Gradient {gradient}: MSE = {mse}")
 
